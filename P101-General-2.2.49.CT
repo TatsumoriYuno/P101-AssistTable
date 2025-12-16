@@ -1,0 +1,2225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="46">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>832</ID>
+      <Description>"Player Values"</Description>
+      <Options moHideChildren="1"/>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>5504</ID>
+          <Description>"Teleport to Quest"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+
+function port_to_quest_foot()
+-- script to teleport us from A to B (player to Quest dest)...
+ local Quest_Dest_X = getAddressList().getMemoryRecordByDescription('Quest Dest X').value
+local Quest_Dest_Y = getAddressList().getMemoryRecordByDescription('Quest Dest Y').value
+local Quest_Dest_Z = getAddressList().getMemoryRecordByDescription('Quest Dest Z').value
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByID(828).CurrentAddress --x address
+local player_y_addr = getAddressList().getMemoryRecordByID(829).CurrentAddress --y address
+local player_z_addr = getAddressList().getMemoryRecordByID(830).CurrentAddress --z address
+
+writeFloat(player_x_addr, Quest_Dest_X)
+writeFloat(player_y_addr, Quest_Dest_Y)
+writeFloat(player_z_addr, Quest_Dest_Z)
+
+end
+
+function port_to_quest_shipMode()
+ local Quest_Dest_X = getAddressList().getMemoryRecordByDescription('Quest Dest X').value
+local Quest_Dest_Y = getAddressList().getMemoryRecordByDescription('Quest Dest Y').value
+local Quest_Dest_Z = getAddressList().getMemoryRecordByDescription('Quest Dest Z').value
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('Ship X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Ship Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Ship Z').CurrentAddress
+
+writeFloat(player_x_addr, Quest_Dest_X)
+writeFloat(player_y_addr, Quest_Dest_Y)
+writeFloat(player_z_addr, Quest_Dest_Z)
+
+end
+
+function port_to_quest()
+   port_to_quest_foot()
+   if (getAddressList().getMemoryRecordByDescription('ship max speed ptr').value ~= nil) then
+       port_to_quest_shipMode()
+   end
+end
+
+[ENABLE]
+port_to_quest()
+[DISABLE]
+port_to_quest()
+
+</AssemblerScript>
+          <Hotkeys>
+            <Hotkey>
+              <Action>Toggle Activation</Action>
+              <Keys>
+                <Key>192</Key>
+              </Keys>
+              <ID>0</ID>
+            </Hotkey>
+          </Hotkeys>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5483</ID>
+          <Description>"NoClip"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+KILL_TIMER = false
+
+local shouldAlternate = false --related to facing direction math
+
+function listen_for_user_input()
+    local didPlayerInput = false --if player inputted, this will be true
+
+    local player_x = getAddressList().getMemoryRecordByDescription('X')
+    local player_y = getAddressList().getMemoryRecordByDescription('Y')
+    local player_z = getAddressList().getMemoryRecordByDescription('Z')
+
+
+    local increment_val = 20.0
+
+--move on x axis controls
+    if(isKeyPressed(VK_5)) then
+        writeFloat(player_x.CurrentAddress, player_x.value + increment_val)
+        didPlayerInput = true
+    end
+    if(isKeyPressed(VK_6)) then
+        writeFloat(player_x.CurrentAddress, player_x.value - increment_val)
+        didPlayerInput = true
+    end
+
+--move on y axis controls
+    if(isKeyPressed(VK_8)) then
+        writeFloat(player_y.CurrentAddress, player_y.value + increment_val)
+        didPlayerInput = true
+    end
+    if(isKeyPressed(VK_7)) then
+        writeFloat(player_y.CurrentAddress, player_y.value - increment_val)
+        didPlayerInput = true
+    end
+
+--move on z axis controls
+    if(isKeyPressed(VK_9)) then
+        writeFloat(player_z.CurrentAddress, player_z.value + increment_val)
+        didPlayerInput = true
+    end
+    if(isKeyPressed(VK_0)) then
+        writeFloat(player_z.CurrentAddress, player_z.value - increment_val)
+        didPlayerInput = true
+    end
+--move player IFF playe inputted something...
+    if (didPlayerInput == true) then
+        local player_movement_addr = getAddressList().getMemoryRecordByID(5996).CurrentAddress --player movement address
+
+        if(shouldAlternate) then
+            writeInteger(player_movement_addr, 32) --update player camera by moving after teleport
+        else
+            --writeInteger(player_movement_addr, 64)
+        end
+        delay_then_reset_player_movement(player_movement_addr)
+        shouldAlternate = not shouldAlternate
+
+    end --end of player movement if statement
+
+end --end of listen_to_user_input function
+
+
+--helper function to delay an action
+function delay_then_reset_player_movement(_player_movement_addr) --function that delays reset of player movement
+    timer = createTimer(nil, true)
+    timer.Interval = 20 --default was 3000
+    timer.OnTimer = function(timer)
+        writeInteger(_player_movement_addr, 0)
+        timer.destroy()
+        --print("Timer destroyed")
+    end
+
+end
+
+
+
+
+function enableTimer()
+    timer = createTimer(nil, true)
+    timer.Interval = 1
+    timer.OnTimer = function(timer)
+    if KILL_TIMER == true then
+        timer.destroy()
+    else
+        listen_for_user_input()
+        end
+    end
+end
+
+[ENABLE]
+enableTimer()
+
+[DISABLE]
+KILL_TIMER = true
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5836</ID>
+          <Description>"AFK spin"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+local player_movement_addr_memrecord = getAddressList().getMemoryRecordByID(5996)
+local player_movement_addr = getAddressList().getMemoryRecordByID(5996).CurrentAddress --player movement address
+
+function afk_spin() --performs afk spin even when window is unfocused
+
+   writeInteger(player_movement_addr, 32) --32 spins to left, 64 spins to right
+   player_movement_addr_memrecord.active = true
+end
+
+function undo_afk_spin() --undoes the afk spin
+   player_movement_addr_memrecord.active = false
+   writeInteger(player_movement_addr, 0) --0 stops all movement
+end
+
+[ENABLE]
+afk_spin()
+
+[DISABLE]
+undo_afk_spin()
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>828</ID>
+          <Description>"X"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>Float</VariableType>
+          <Address>Pirate.exe+20D0980</Address>
+          <Offsets>
+            <Offset>40</Offset>
+            <Offset>24</Offset>
+            <Offset>74</Offset>
+            <Offset>8</Offset>
+            <Offset>10</Offset>
+            <Offset>C8</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>829</ID>
+          <Description>"Y"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>Float</VariableType>
+          <Address>Pirate.exe+20D0980</Address>
+          <Offsets>
+            <Offset>44</Offset>
+            <Offset>24</Offset>
+            <Offset>74</Offset>
+            <Offset>8</Offset>
+            <Offset>10</Offset>
+            <Offset>C8</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>830</ID>
+          <Description>"Z"</Description>
+          <VariableType>Float</VariableType>
+          <Address>Pirate.exe+20D0980</Address>
+          <Offsets>
+            <Offset>48</Offset>
+            <Offset>24</Offset>
+            <Offset>74</Offset>
+            <Offset>8</Offset>
+            <Offset>10</Offset>
+            <Offset>C8</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>882</ID>
+          <Description>"Facing (Horizontal)"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>Float</VariableType>
+          <Address>Pirate.exe+20D0980</Address>
+          <Offsets>
+            <Offset>54</Offset>
+            <Offset>24</Offset>
+            <Offset>74</Offset>
+            <Offset>8</Offset>
+            <Offset>10</Offset>
+            <Offset>C8</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>831</ID>
+          <Description>"player speed"</Description>
+          <ShowAsSigned>0</ShowAsSigned>
+          <VariableType>Float</VariableType>
+          <Address>Pirate.exe+20D0980</Address>
+          <Offsets>
+            <Offset>3C</Offset>
+            <Offset>74</Offset>
+            <Offset>8</Offset>
+            <Offset>10</Offset>
+            <Offset>C8</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>924</ID>
+          <Description>"Ship X"</Description>
+          <VariableType>Float</VariableType>
+          <Address>Pirate.exe+20D0980</Address>
+          <Offsets>
+            <Offset>40</Offset>
+            <Offset>7C</Offset>
+            <Offset>24</Offset>
+            <Offset>74</Offset>
+            <Offset>8</Offset>
+            <Offset>10</Offset>
+            <Offset>C8</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>925</ID>
+          <Description>"Ship Y"</Description>
+          <VariableType>Float</VariableType>
+          <Address>Pirate.exe+20D0980</Address>
+          <Offsets>
+            <Offset>44</Offset>
+            <Offset>7C</Offset>
+            <Offset>24</Offset>
+            <Offset>74</Offset>
+            <Offset>8</Offset>
+            <Offset>10</Offset>
+            <Offset>C8</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>926</ID>
+          <Description>"Ship Z"</Description>
+          <VariableType>Float</VariableType>
+          <Address>Pirate.exe+20D0980</Address>
+          <Offsets>
+            <Offset>48</Offset>
+            <Offset>7C</Offset>
+            <Offset>24</Offset>
+            <Offset>74</Offset>
+            <Offset>8</Offset>
+            <Offset>10</Offset>
+            <Offset>C8</Offset>
+          </Offsets>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5780</ID>
+          <Description>"Camera Values ..."</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>5826</ID>
+              <Description>"Cutscene &amp; combat grid Camera Rotation "</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Pirate.exe+20E9FF4</Address>
+              <Offsets>
+                <Offset>30</Offset>
+                <Offset>A8</Offset>
+                <Offset>58</Offset>
+                <Offset>8</Offset>
+                <Offset>0</Offset>
+                <Offset>90</Offset>
+                <Offset>0</Offset>
+                <Offset>E4</Offset>
+                <Offset>28</Offset>
+              </Offsets>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>5832</ID>
+                  <Description>"Scene Camera X"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+24</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>5833</ID>
+                  <Description>"Scene Camera Y"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+28</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>5834</ID>
+                  <Description>"Scene Camera Z"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+2C</Address>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5998</ID>
+              <Description>"potential camera pitch"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Pirate.exe+020C9B70</Address>
+              <Offsets>
+                <Offset>48</Offset>
+                <Offset>58</Offset>
+                <Offset>8</Offset>
+                <Offset>8</Offset>
+                <Offset>8</Offset>
+                <Offset>C</Offset>
+                <Offset>C</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6000</ID>
+              <Description>"potential camera yaw (relative to Character)"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Pirate.exe+20C9B70</Address>
+              <Offsets>
+                <Offset>50</Offset>
+                <Offset>58</Offset>
+                <Offset>8</Offset>
+                <Offset>8</Offset>
+                <Offset>8</Offset>
+                <Offset>C</Offset>
+                <Offset>C</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5778</ID>
+              <Description>"Character camera yaw"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Pirate.exe+20C9B70</Address>
+              <Offsets>
+                <Offset>FC</Offset>
+                <Offset>58</Offset>
+                <Offset>8</Offset>
+                <Offset>8</Offset>
+                <Offset>8</Offset>
+                <Offset>C</Offset>
+                <Offset>C</Offset>
+              </Offsets>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>5779</ID>
+                  <Description>"camera zoom"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+8</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>5784</ID>
+                  <Description>"camera z offset 1"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+A0</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>5785</ID>
+                  <Description>"camera z offset 2"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+A4</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>5789</ID>
+                  <Description>"camera max pitch (writable)"</Description>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>+DC</Address>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>5791</ID>
+                  <Description>"baseAddress of Camera XYZ"</Description>
+                  <ShowAsHex>1</ShowAsHex>
+                  <ShowAsSigned>0</ShowAsSigned>
+                  <VariableType>Float</VariableType>
+                  <Address>Pirate.exe+20C9B70</Address>
+                  <Offsets>
+                    <Offset>0</Offset>
+                    <Offset>58</Offset>
+                    <Offset>58</Offset>
+                    <Offset>8</Offset>
+                    <Offset>8</Offset>
+                    <Offset>8</Offset>
+                    <Offset>C</Offset>
+                    <Offset>C</Offset>
+                  </Offsets>
+                  <CheatEntries>
+                    <CheatEntry>
+                      <ID>5794</ID>
+                      <Description>"camera X"</Description>
+                      <ShowAsSigned>0</ShowAsSigned>
+                      <VariableType>Float</VariableType>
+                      <Address>+24</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>5793</ID>
+                      <Description>"camera Y"</Description>
+                      <ShowAsSigned>0</ShowAsSigned>
+                      <VariableType>Float</VariableType>
+                      <Address>+28</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>5792</ID>
+                      <Description>"camera Z"</Description>
+                      <ShowAsSigned>0</ShowAsSigned>
+                      <VariableType>Float</VariableType>
+                      <Address>+2C</Address>
+                    </CheatEntry>
+                    <CheatEntry>
+                      <ID>5800</ID>
+                      <Description>"some pointer near Cam XYZ"</Description>
+                      <ShowAsHex>1</ShowAsHex>
+                      <ShowAsSigned>0</ShowAsSigned>
+                      <VariableType>Float</VariableType>
+                      <Address>Pirate.exe+20C9B70</Address>
+                      <Offsets>
+                        <Offset>0</Offset>
+                        <Offset>A8</Offset>
+                        <Offset>58</Offset>
+                        <Offset>58</Offset>
+                        <Offset>8</Offset>
+                        <Offset>8</Offset>
+                        <Offset>8</Offset>
+                        <Offset>C</Offset>
+                        <Offset>C</Offset>
+                      </Offsets>
+                      <CheatEntries>
+                        <CheatEntry>
+                          <ID>5801</ID>
+                          <Description>"render range? lower nbr, less objects"</Description>
+                          <ShowAsSigned>0</ShowAsSigned>
+                          <VariableType>Float</VariableType>
+                          <Address>+10C</Address>
+                        </CheatEntry>
+                      </CheatEntries>
+                    </CheatEntry>
+                  </CheatEntries>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5835</ID>
+              <Description>"FreeCam"</Description>
+              <Options moHideChildren="1" moActivateChildrenAsWell="1" moDeactivateChildrenAsWell="1"/>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>//-- Speed Modifier for camera movement
+globalalloc(speedModifier, 10)
+speedModifier:
+dd (float)10
+
+{$lua}
+KILL_TIMER = false
+
+--local shouldAlternate = false --related to facing direction math
+
+function listen_for_user_input()
+
+--print(getAddressList().getMemoryRecordByDescription('potential camera yaw').CurrentAddress)
+
+local yaw = readFloat(getAddressList().getMemoryRecordByDescription('Character camera yaw').CurrentAddress) --Horizontal (Yaw)
+local pitch = readFloat(getAddressList().getMemoryRecordByDescription('potential camera pitch').CurrentAddress) --Vertical (Pitch)
+
+
+--sine and cosine of rotation values
+local siny = math.sin(yaw)  --Sine of Horizontal (yaw)
+local cosy = math.cos(yaw)  --Cosine of Horizontal (yaw)
+local sinp = math.sin(pitch) --Sine of Vertical (pitch)
+local cosp = math.cos(pitch) --Cosine of Vertical (pitch)
+
+local player_x = getAddressList().getMemoryRecordByDescription('Scene Camera X') --Cam X
+local player_y = getAddressList().getMemoryRecordByDescription('Scene Camera Y') --Cam Y
+local player_z = getAddressList().getMemoryRecordByDescription('Scene Camera Z') --Cam Z
+
+
+--local increment_val = 20.0 -- previous value: 20.0
+local increment_val = readFloat("speedModifier")
+
+--move on x axis controls
+
+--Forward
+if(isKeyPressed(VK_NUMPAD8)) then
+   --writeFloat(player_x.CurrentAddress, player_x.value + increment_val)  --original code
+   writeFloat(player_y.CurrentAddress, player_y.value - (cosy * increment_val))
+   writeFloat(player_x.CurrentAddress, player_x.value - (siny * increment_val))
+   writeFloat(player_z.CurrentAddress, player_z.value - (sinp * increment_val))
+end
+--Backward
+if(isKeyPressed(VK_NUMPAD2)) then
+   --writeFloat(player_x.CurrentAddress, player_x.value - increment_val)
+   writeFloat(player_y.CurrentAddress, player_y.value + (cosy * increment_val))
+   writeFloat(player_x.CurrentAddress, player_x.value + (siny * increment_val))
+   writeFloat(player_z.CurrentAddress, player_z.value + (sinp * increment_val))
+end
+
+--move on y axis controls
+
+--Left
+if(isKeyPressed(VK_NUMPAD4)) then
+   --writeFloat(player_y.CurrentAddress, player_y.value + increment_val)
+   writeFloat(player_y.CurrentAddress, player_y.value + (math.cos(yaw + math.rad(90)) * increment_val))
+   writeFloat(player_x.CurrentAddress, player_x.value + (math.sin(yaw + math.rad(90)) * increment_val))
+end
+--Right
+if(isKeyPressed(VK_NUMPAD6)) then
+   --writeFloat(player_y.CurrentAddress, player_y.value - increment_val)
+   writeFloat(player_y.CurrentAddress, player_y.value + (math.cos(yaw - math.rad(90)) * increment_val))
+   writeFloat(player_x.CurrentAddress, player_x.value + (math.sin(yaw - math.rad(90)) * increment_val))
+end
+
+--Up
+if(isKeyPressed(VK_SUBTRACT)) then
+writeFloat(player_z.CurrentAddress, player_z.value + increment_val)
+end
+--Down
+if(isKeyPressed(VK_ADD)) then
+writeFloat(player_z.CurrentAddress, player_z.value - increment_val)
+end
+
+--Speed Modifier
+if (isKeyPressed(VK_NUMPAD1)) then
+   writeFloat("speedModifier", 500)
+else -- if nothing is pressed, speed is normal
+   writeFloat("speedModifier", 10)
+end
+end --end of listen_to_user_input function
+
+
+
+function enableTimer()
+    timer = createTimer(nil, true)
+    timer.Interval = 1
+    timer.OnTimer = function(timer)
+    if KILL_TIMER == true then
+        timer.destroy()
+        --print("Timer destroyed")
+    else
+        listen_for_user_input()
+        end
+    end
+end
+[ENABLE]
+enableTimer()
+[DISABLE]
+
+KILL_TIMER = true
+</AssemblerScript>
+              <CheatEntries>
+                <CheatEntry>
+                  <ID>5999</ID>
+                  <Description>"Detach Camera"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+
+assert("Pirate.exe"+9D8335,66 0F D6 00 89 48 08 5E 83 C4 0C) //we use "assert" instead of AOB scan
+// -- Disable XY writes to decouple camera from player
+"Pirate.exe"+9D8335:
+  db 90 90 90 90 90 90 90  // the number of NOP bytes here, must match the one below under [DISABLE]
+
+// -- Disable Z writes to decouple camera from player
+"Pirate.exe"+9D8339:
+  db 90 90 90
+
+[DISABLE]
+"Pirate.exe"+9D8335:
+  db 66 0F D6 00 89 48 08
+
+"Pirate.exe"+9D8339:
+  db 89 48 08
+
+{
+// ORIGINAL CODE - INJECTION POINT: Pirate.exe+9DA2D5
+
+Pirate.exe+9DA2A5: 8B 87 A8 00 00 00  - mov eax,[edi+000000A8]
+Pirate.exe+9DA2AB: F3 0F 10 4E 04     - movss xmm1,[esi+04]
+Pirate.exe+9DA2B0: F3 0F 10 56 08     - movss xmm2,[esi+08]
+Pirate.exe+9DA2B5: 83 C0 54           - add eax,54
+Pirate.exe+9DA2B8: F3 0F 11 44 24 08  - movss [esp+08],xmm0
+Pirate.exe+9DA2BE: F3 0F 11 4C 24 0C  - movss [esp+0C],xmm1
+Pirate.exe+9DA2C4: F3 0F 7E 44 24 08  - movq xmm0,[esp+08]
+Pirate.exe+9DA2CA: F3 0F 11 54 24 10  - movss [esp+10],xmm2
+Pirate.exe+9DA2D0: 8B 4C 24 10        - mov ecx,[esp+10]
+Pirate.exe+9DA2D4: 5F                 - pop edi
+// ---------- XY START ----------
+Pirate.exe+9DA2D5: 66 0F D6 00        - movq [eax],xmm0      //-- use this line's module name + offset and...
+// ---------- XY END ----------
+// ---------- Z START ----------
+Pirate.exe+9DA2D9: 89 48 08           - mov [eax+08],ecx     // thsi line's module name + offset EVERY UPDATE
+// ---------- Z END ----------
+Pirate.exe+9DA2DC: 5E                 - pop esi
+Pirate.exe+9DA2DD: 83 C4 0C           - add esp,0C
+Pirate.exe+9DA2E0: C2 04 00           - ret 0004
+Pirate.exe+9DA2E3: CC                 - int 3 
+Pirate.exe+9DA2E4: CC                 - int 3 
+Pirate.exe+9DA2E5: CC                 - int 3 
+Pirate.exe+9DA2E6: CC                 - int 3 
+Pirate.exe+9DA2E7: CC                 - int 3 
+Pirate.exe+9DA2E8: CC                 - int 3
+
+
+Here is the AOB scan code I used on the next update:
+
+8B 87 A8000000 xx xx xx xx 04
+}
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>6001</ID>
+                  <Description>"Detach Camera Pitch"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+
+assert("Pirate.exe"+960E5C,D9 86 74 01 00 00 D9)
+//-- Disable Pitch writes to decouple camera from player
+"Pirate.exe"+960E5C:
+  db 90 90 90 90 90 90
+
+
+[DISABLE]
+
+"Pirate.exe"+960E5C:
+  db D9 86 74 01 00 00
+
+
+{
+// ORIGINAL CODE - INJECTION POINT: Pirate.exe+962AAC
+
+Pirate.exe+962A7E: F3 0F 11 44 24 18        - movss [esp+18],xmm0
+Pirate.exe+962A84: F3 0F 10 05 74 01 42 02  - movss xmm0,[Pirate.exe+2020174]
+Pirate.exe+962A8C: 0F 5A D0                 - cvtps2pd xmm2,xmm0
+Pirate.exe+962A8F: 66 0F 2F CA              - comisd xmm1,xmm2
+Pirate.exe+962A93: 76 06                    - jna Pirate.exe+962A9B
+Pirate.exe+962A95: F3 0F 11 44 24 18        - movss [esp+18],xmm0
+Pirate.exe+962A9B: D9 44 24 18              - fld dword ptr [esp+18]
+Pirate.exe+962A9F: 83 EC 0C                 - sub esp,0C
+Pirate.exe+962AA2: D9 5C 24 08              - fstp dword ptr [esp+08]
+Pirate.exe+962AA6: 8D 8E 50 01 00 00        - lea ecx,[esi+00000150]
+// ---------- INJECTING HERE ----------
+Pirate.exe+962AAC: D9 86 74 01 00 00        - fld dword ptr [esi+00000174]
+// ---------- DONE INJECTING  ----------
+Pirate.exe+962AB2: D9 5C 24 04              - fstp dword ptr [esp+04]
+Pirate.exe+962AB6: D9 46 48                 - fld dword ptr [esi+48]
+Pirate.exe+962AB9: D9 1C 24                 - fstp dword ptr [esp]
+Pirate.exe+962ABC: E8 7F E3 FF FF           - call Pirate.exe+960E40
+Pirate.exe+962AC1: 80 BE E0 01 00 00 00     - cmp byte ptr [esi+000001E0],00
+Pirate.exe+962AC8: D9 5C 24 18              - fstp dword ptr [esp+18]
+Pirate.exe+962ACC: D9 44 24 18              - fld dword ptr [esp+18]
+Pirate.exe+962AD0: D9 56 48                 - fst dword ptr [esi+48]
+Pirate.exe+962AD3: 75 0B                    - jne Pirate.exe+962AE0
+Pirate.exe+962AD5: 0F 57 C0                 - xorps xmm0,xmm0
+
+Here's the AOB scan I used to find this same code NEXT update:
+
+8D 8E 50010000 D9 86 74010000
+
+}
+</AssemblerScript>
+                </CheatEntry>
+              </CheatEntries>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5461</ID>
+          <Description>"Other player values"</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>5996</ID>
+              <Description>"player movement buttons (1, 32, 2 ,64 are WASD)"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>Pirate.exe+20D0980</Address>
+              <Offsets>
+                <Offset>A8</Offset>
+                <Offset>74</Offset>
+                <Offset>8</Offset>
+                <Offset>10</Offset>
+                <Offset>C8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>856</ID>
+              <Description>"ship max speed ptr"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Pirate.exe+20CFD70</Address>
+              <Offsets>
+                <Offset>A8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5473</ID>
+              <Description>"ship accl speed ptr"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Pirate.exe+20CFD70</Address>
+              <Offsets>
+                <Offset>AC</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>857</ID>
+              <Description>"ship turn speed ptr"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Pirate.exe+20CFD70</Address>
+              <Offsets>
+                <Offset>B0</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>884</ID>
+              <Description>"Quest Dest X"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Pirate.exe+20D0980</Address>
+              <Offsets>
+                <Offset>B74</Offset>
+                <Offset>1D8</Offset>
+                <Offset>1E4</Offset>
+                <Offset>58</Offset>
+                <Offset>8</Offset>
+                <Offset>30</Offset>
+                <Offset>C8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>885</ID>
+              <Description>"Quest Dest Y"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Pirate.exe+20D0980</Address>
+              <Offsets>
+                <Offset>B78</Offset>
+                <Offset>1D8</Offset>
+                <Offset>1E4</Offset>
+                <Offset>58</Offset>
+                <Offset>8</Offset>
+                <Offset>30</Offset>
+                <Offset>C8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>886</ID>
+              <Description>"Quest Dest Z"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Float</VariableType>
+              <Address>Pirate.exe+20D0980</Address>
+              <Offsets>
+                <Offset>B7C</Offset>
+                <Offset>1D8</Offset>
+                <Offset>1E4</Offset>
+                <Offset>58</Offset>
+                <Offset>8</Offset>
+                <Offset>30</Offset>
+                <Offset>C8</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>877</ID>
+              <Description>"Teleport to Quest Dest (on foot)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+
+function port_to_quest_foot()
+-- script to teleport us from A to B (player to Quest dest)...
+ local Quest_Dest_X = getAddressList().getMemoryRecordByDescription('Quest Dest X').value
+local Quest_Dest_Y = getAddressList().getMemoryRecordByDescription('Quest Dest Y').value
+local Quest_Dest_Z = getAddressList().getMemoryRecordByDescription('Quest Dest Z').value
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+--print("Quest X", Quest_Dest_X)
+--print("Quest Y", Quest_Dest_Y)
+--print("Quest Z", Quest_Dest_Z)
+
+writeFloat(player_x_addr, Quest_Dest_X)
+writeFloat(player_y_addr, Quest_Dest_Y)
+writeFloat(player_z_addr, Quest_Dest_Z)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+end
+[ENABLE]
+port_to_quest_foot()
+--getAddressList().getMemoryRecordByDescription('Teleport to Quest Dest (on foot)').Active = false
+--Teleport to Quest Dest (on foot)
+
+[DISABLE]
+port_to_quest_foot()
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>927</ID>
+              <Description>"Teleport to Quest Dest (on ship)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+--KILL = false
+
+function port_to_quest_shipMode()
+-- script to teleport us from A to B (player to Quest dest)...
+ local Quest_Dest_X = getAddressList().getMemoryRecordByDescription('Quest Dest X').value
+local Quest_Dest_Y = getAddressList().getMemoryRecordByDescription('Quest Dest Y').value
+local Quest_Dest_Z = getAddressList().getMemoryRecordByDescription('Quest Dest Z').value
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('Ship X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Ship Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Ship Z').CurrentAddress
+
+print("Quest X", Quest_Dest_X)
+print("Quest Y", Quest_Dest_Y)
+print("Quest Z", Quest_Dest_Z)
+
+writeFloat(player_x_addr, Quest_Dest_X)
+writeFloat(player_y_addr, Quest_Dest_Y)
+writeFloat(player_z_addr, Quest_Dest_Z)
+
+end
+
+[ENABLE]
+--if KILL == false then
+port_to_quest_shipMode()
+--end
+
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+port_to_quest_shipMode()
+--KILL = true
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6138</ID>
+              <Description>"Windjammer score"</Description>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>MG_Windjammer.dll+11F7C</Address>
+              <Offsets>
+                <Offset>0</Offset>
+              </Offsets>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>928</ID>
+      <Description>"Mission specific teleports"</Description>
+      <Options moHideChildren="1"/>
+      <GroupHeader>1</GroupHeader>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>6042</ID>
+          <Description>"Teleport to Rooke (aside from rooke)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, -9835.0)
+writeFloat(player_y_addr, -1510.0)
+writeFloat(player_z_addr, 1031.0)
+writeFloat(player_facingDir_addr, 1.575)
+
+
+
+
+[DISABLE]
+-- lua code
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5507</ID>
+          <Description>"Teleport to Rooke (inside dungeon, at dungeon start)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+KILL_TIMER = false
+
+function port_to_rooke_beginning()
+local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+--local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+
+--face player towards Rooke
+--writeFloat(player_facingDir_addr, 1.561848879)
+
+-- teleport us to Rooke
+writeFloat(player_x_addr, -1108.515137)
+writeFloat(player_y_addr, 1661.954346)
+writeFloat(player_z_addr, -291.2753296)
+end
+
+
+
+function keepTimerGoing(sometimer)
+   port_to_rooke()
+end
+
+function enableTimer()
+    timer = createTimer(nil, true)
+    timer.Interval = 3000
+    timer.OnTimer = function(timer)
+    if KILL_TIMER == true then
+        timer.destroy()
+        print("Timer destroyed")
+    else
+        port_to_rooke_beginning()
+        end
+    end
+end
+
+--function disableTimer()
+--   timer.setEnabled = false
+--   timer.destroy()
+--   timer = nil
+--   print("timer destroyed")
+--end
+
+
+
+
+[ENABLE]
+enableTimer()
+-- script to teleport us from A to B (player to Rooke fight)...
+--KILL_TIMER = false
+
+
+              --end --end of timer function
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+
+KILL_TIMER = true
+-- lua code
+--disableTimer()
+--KILL_TIMER = true
+
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5471</ID>
+          <Description>"Teleport to Rooke (on ship)"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+KILL_TIMER = false
+
+function port_to_rooke()
+local player_x_addr = getAddressList().getMemoryRecordByDescription('Ship X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Ship Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Ship Z').CurrentAddress
+
+--local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+
+--face player towards Rooke
+--writeFloat(player_facingDir_addr, 1.561848879)
+
+-- teleport us to Rooke
+writeFloat(player_x_addr, 533993.625)
+writeFloat(player_y_addr, 150137.3438)
+writeFloat(player_z_addr, 16000.7373)
+end
+
+
+
+
+
+--function disableTimer()
+--   timer.setEnabled = false
+--   timer.destroy()
+--   timer = nil
+--   print("timer destroyed")
+--end
+
+
+
+
+[ENABLE]
+port_to_rooke()
+-- script to teleport us from A to B (player to Rooke fight)...
+--KILL_TIMER = false
+
+
+              --end --end of timer function
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+--disableTimer()
+--KILL_TIMER = true
+
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5474</ID>
+          <Description>"Moo Manchu..."</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>5475</ID>
+              <Description>"Manchu (dungeon sigil)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 7986.618652)
+writeFloat(player_y_addr, -10513.52637)
+writeFloat(player_z_addr, -42.89537811)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5484</ID>
+              <Description>"Manchu First Floor Skip"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 7264.890625)
+writeFloat(player_y_addr, 2387.45459)
+writeFloat(player_z_addr, 112.3939667)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5476</ID>
+              <Description>"Manchu Second Floor Skip"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 7297.283203)
+writeFloat(player_y_addr, 8407.055664)
+writeFloat(player_z_addr, 124.6271973)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5477</ID>
+              <Description>"Manchu Third Floor Skip"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 1357.633301)
+writeFloat(player_y_addr, 8438.005859)
+writeFloat(player_z_addr, 147.4186859)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5478</ID>
+              <Description>"Manchu Fourth Floor Skip (spreading fire level) must win this fight to skip"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 1904.36084)
+writeFloat(player_y_addr, 290.0837097)
+writeFloat(player_z_addr, 703.131897)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5508</ID>
+              <Description>"Manchu Fifth Floor (healing room)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 5935.190918)
+writeFloat(player_y_addr, -47.78878403)
+writeFloat(player_z_addr, -92.46440887)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5479</ID>
+              <Description>"Manchu Sixth Floor Skip "</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 7301.119141)
+writeFloat(player_y_addr, 8432.726562)
+writeFloat(player_z_addr, 126.0758743)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5480</ID>
+              <Description>"Manchu Seventh Floor Skip "</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 1185.985107)
+writeFloat(player_y_addr, 8395.657227)
+writeFloat(player_z_addr, 82.59487915)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5481</ID>
+              <Description>"Manchu (Nefarious Five) Floor Skip  (must win this fight to skip)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 1801.831665)
+writeFloat(player_y_addr, -883.7780151)
+writeFloat(player_z_addr, 476.0986938)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5482</ID>
+              <Description>"Manchu Ninth Floor Skip (terra-cotta)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 7124.463379)
+writeFloat(player_y_addr, 2422.612793)
+writeFloat(player_z_addr, 59.36083221)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5509</ID>
+              <Description>"Manchu (Final boss)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 6.22053194)
+writeFloat(player_y_addr, -1416.640015)
+writeFloat(player_z_addr, 0.00006103516353)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6062</ID>
+              <Description>"Nefarious 5 - Witchdoctor Only"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+
+function dostuff()
+local player_x_addr = getAddressList().getMemoryRecordByID(828)
+local player_y_addr = getAddressList().getMemoryRecordByID(829)
+local player_z_addr = getAddressList().getMemoryRecordByID(830)
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)')
+
+writeFloat(player_x_addr.CurrentAddress, -1620.0)
+writeFloat(player_y_addr.CurrentAddress, -115.0)
+writeFloat(player_z_addr.CurrentAddress, 0.65)
+writeFloat(player_facingDir_addr.CurrentAddress, 0.835)
+doKeyPress(VK_A)
+sleep(100)
+doKeyPress(VK_A)
+sleep(100)
+doKeyPress(VK_A)
+sleep(100)
+doKeyPress(VK_A)
+sleep(100)
+doKeyPress(VK_A)
+sleep(100)
+
+end
+
+[ENABLE]
+dostuff()
+
+[DISABLE]
+dostuff()
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6063</ID>
+              <Description>"Nefarious 5 - Privateer Only"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+
+function dostuff()
+local player_x_addr = getAddressList().getMemoryRecordByID(828)
+local player_y_addr = getAddressList().getMemoryRecordByID(829)
+local player_z_addr = getAddressList().getMemoryRecordByID(830)
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)')
+
+writeFloat(player_x_addr.CurrentAddress, -2380.0)
+writeFloat(player_y_addr.CurrentAddress, -850.0)
+writeFloat(player_z_addr.CurrentAddress, 0.65)
+writeFloat(player_facingDir_addr.CurrentAddress, 0.835)
+doKeyPress(VK_A)
+sleep(100)
+doKeyPress(VK_A)
+sleep(100)
+doKeyPress(VK_A)
+sleep(100)
+doKeyPress(VK_A)
+sleep(100)
+doKeyPress(VK_A)
+sleep(100)
+
+end
+
+[ENABLE]
+dostuff()
+
+[DISABLE]
+dostuff()
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5485</ID>
+          <Description>"Devilfish Hollow ..."</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>5488</ID>
+              <Description>"Teleport to Corsair's Channel (on ship)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('Ship X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Ship Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Ship Z').CurrentAddress
+
+writeFloat(player_x_addr, 150407.9688)
+writeFloat(player_y_addr, -318544.2812)
+writeFloat(player_z_addr, 12811.21582)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5489</ID>
+              <Description>"Teleport to Devilfish Hollow dock (on ship)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('Ship X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Ship Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Ship Z').CurrentAddress
+
+
+writeFloat(player_x_addr, -48967.34766)
+writeFloat(player_y_addr, 393576.2188)
+writeFloat(player_z_addr, 12805.87891)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5486</ID>
+              <Description>"Teleport to Secret Trainer Door"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 8724.205078)
+writeFloat(player_y_addr, 3850.963623)
+writeFloat(player_z_addr, -3286.72876)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5487</ID>
+              <Description>"Teleport to Crusher's Lair"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 2378.258789)
+writeFloat(player_y_addr, -2779.825684)
+writeFloat(player_z_addr, -902.5764771)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>6047</ID>
+          <Description>"Tartarus..."</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>6046</ID>
+              <Description>"TP to Beast Summoner(IV)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, -13030.0)
+writeFloat(player_y_addr, 10000.0)
+writeFloat(player_z_addr, 75.0)
+writeFloat(player_facingDir_addr, 0.0)
+
+
+
+
+[DISABLE]
+-- lua code
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6044</ID>
+              <Description>"TP to Brogos"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, -1570.0)
+writeFloat(player_y_addr, 6940.0)
+writeFloat(player_z_addr, -555.0)
+writeFloat(player_facingDir_addr, 1.875)
+
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>6030</ID>
+          <Description>"Sinbad p2..."</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>6041</ID>
+              <Description>"TP to floor 2"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, -565.0)
+writeFloat(player_y_addr, -1450.0)
+writeFloat(player_z_addr, 0.0)
+writeFloat(player_facingDir_addr, -2.8)
+
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6045</ID>
+              <Description>"TP to ravaged valley entrance"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, 5000.0)
+writeFloat(player_y_addr, 15115.0)
+writeFloat(player_z_addr, 380.0)
+writeFloat(player_facingDir_addr, 2.75)
+
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>6043</ID>
+          <Description>"TP to Kane"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, -440.0)
+writeFloat(player_y_addr, -1420.0)
+writeFloat(player_z_addr, 3405.0)
+writeFloat(player_facingDir_addr, -2.85)
+
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>6051</ID>
+          <Description>"Trianon..."</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>6052</ID>
+              <Description>"east wing - to deacqueen"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, 2210.0)
+writeFloat(player_y_addr, 1480.0)
+writeFloat(player_z_addr, 2.0)
+writeFloat(player_facingDir_addr, -1.375)
+doKeyPress(VK_A)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6055</ID>
+              <Description>"exterior - hamster of damage testing"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, 8850.0)
+writeFloat(player_y_addr, 3415.0)
+writeFloat(player_z_addr, -570.0)
+writeFloat(player_facingDir_addr, -1.0)
+doKeyPress(VK_A)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6058</ID>
+              <Description>"exterior - mountain squinty"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, -10300.0)
+writeFloat(player_y_addr, 2200.0)
+writeFloat(player_z_addr, -475.0)
+writeFloat(player_facingDir_addr, -2.38)
+doKeyPress(VK_A)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6056</ID>
+              <Description>"exterior - ambush bitch/ballroom door"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, 115.0)
+writeFloat(player_y_addr, 8900.0)
+writeFloat(player_z_addr, -570.0)
+writeFloat(player_facingDir_addr, -1.535)
+doKeyPress(VK_A)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6057</ID>
+              <Description>"exterior - hawk promo 2 electric boogaloo"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, 0.0)
+writeFloat(player_y_addr, -415.0)
+writeFloat(player_z_addr, -120.0)
+writeFloat(player_facingDir_addr, -3.15)
+doKeyPress(VK_A)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6053</ID>
+              <Description>"west wing - past glitchy wall-door #1"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, 1175.0)
+writeFloat(player_y_addr, -475.0)
+writeFloat(player_z_addr, 2.1)
+writeFloat(player_facingDir_addr, 1.58)
+doKeyPress(VK_A)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6054</ID>
+              <Description>"west wing - past glitchy wall-door #2"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, -138.35)
+writeFloat(player_y_addr, 1010.0)
+writeFloat(player_z_addr, 22.0)
+writeFloat(player_facingDir_addr, -2.6)
+doKeyPress(VK_A)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>6050</ID>
+          <Description>"TP to Axwar"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+writeFloat(player_x_addr, 455.0)
+writeFloat(player_y_addr, 6675.0)
+writeFloat(player_z_addr, 1.5)
+writeFloat(player_facingDir_addr, 0.275)
+
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>6037</ID>
+          <Description>"Zigazag ..."</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>6038</ID>
+              <Description>"TP past the bone drake hallway"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 9770.0)
+writeFloat(player_y_addr, -3210.0)
+writeFloat(player_z_addr, 220.0)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6039</ID>
+              <Description>"TP past the battle angel hallway"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, 10110.0)
+writeFloat(player_y_addr, 4970.0)
+writeFloat(player_z_addr, 3.6)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>6040</ID>
+              <Description>"TP past the mooks in House of Scales"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+--print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, -6025.0)
+writeFloat(player_y_addr, -3780.0)
+writeFloat(player_z_addr, -3315.0)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>6061</ID>
+          <Description>"cabin door"</Description>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+
+function dostuff()
+local player_x_addr = getAddressList().getMemoryRecordByID(828)
+local player_y_addr = getAddressList().getMemoryRecordByID(829)
+local player_z_addr = getAddressList().getMemoryRecordByID(830)
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)')
+
+writeFloat(player_x_addr.CurrentAddress, 0.0)
+writeFloat(player_y_addr.CurrentAddress, -1850.0)
+writeFloat(player_z_addr.CurrentAddress, 0.0)
+writeFloat(player_facingDir_addr.CurrentAddress, 0.0)
+doKeyPress(VK_A)
+
+end
+
+[ENABLE]
+dostuff()
+
+[DISABLE]
+dostuff()
+</AssemblerScript>
+          <Hotkeys>
+            <Hotkey>
+              <Action>Toggle Activation</Action>
+              <Keys>
+                <Key>109</Key>
+              </Keys>
+              <ID>0</ID>
+            </Hotkey>
+          </Hotkeys>
+        </CheatEntry>
+        <CheatEntry>
+          <ID>5559</ID>
+          <Description>"Palace of Hyssarik..."</Description>
+          <Options moHideChildren="1"/>
+          <GroupHeader>1</GroupHeader>
+          <CheatEntries>
+            <CheatEntry>
+              <ID>5510</ID>
+              <Description>"Teleport to Pariss (fight inside dungeon)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+
+function port_to_pariss()
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+writeFloat(player_x_addr, -4253.504883)
+writeFloat(player_y_addr, 10259.63574)
+writeFloat(player_z_addr, 171.9212799)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+end
+
+[ENABLE]
+port_to_pariss()
+
+
+[DISABLE]
+port_to_pariss()
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>5511</ID>
+              <Description>"Teleport to Pariss (inside, exit door of dungeon)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+
+function port_to_beginning_of_pariss()
+-- script to teleport us from A to B (player to Quest dest)
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+
+writeFloat(player_x_addr, 19.38336945)
+writeFloat(player_y_addr, -2922.416504)
+writeFloat(player_z_addr, 200.0001831)
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+end
+
+[ENABLE]
+port_to_beginning_of_pariss()
+
+
+[DISABLE]
+port_to_beginning_of_pariss()
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>883</ID>
+              <Description>"Teleport to Mari's Machine (then back to fight)"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>{$lua}
+[ENABLE]
+-- script to teleport us from A to B (player to Quest dest)...
+ --print(string.format("%X", x_coord.CurrentAddress))
+ -- print(Quest_Dest_X)
+ local player_x_addr = getAddressList().getMemoryRecordByDescription('X').CurrentAddress
+local player_y_addr = getAddressList().getMemoryRecordByDescription('Y').CurrentAddress
+local player_z_addr = getAddressList().getMemoryRecordByDescription('Z').CurrentAddress
+
+local player_facingDir_addr = getAddressList().getMemoryRecordByDescription('Facing (Horizontal)').CurrentAddress
+
+-- store player's current position
+local curr_x = readFloat(player_x_addr)
+local curr_y = readFloat(player_y_addr)
+local curr_z = readFloat(player_z_addr)
+
+
+writeFloat(player_facingDir_addr, 2.420498848)
+
+writeFloat(player_x_addr, 268.4401855)
+writeFloat(player_y_addr, -2337.750977)
+writeFloat(player_z_addr, 1168.513428)
+
+timer = createTimer()
+timer.interval = 2000 --200 ms delay
+timer.onTimer = function ()
+writeFloat(player_x_addr, curr_x)
+writeFloat(player_y_addr, curr_y)
+writeFloat(player_z_addr, curr_z)
+timer.destroy()
+print("timer destroyed")
+end
+
+
+--print(player_x_addr, Quest_Dest_X)
+--print(player_y_addr, Quest_Dest_Y)
+--print(player_z_addr, Quest_Dest_Z)
+
+
+[DISABLE]
+-- lua code
+
+</AssemblerScript>
+            </CheatEntry>
+          </CheatEntries>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <UserdefinedSymbols/>
+</CheatTable>
