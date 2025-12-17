@@ -11,4 +11,4 @@ Noclip controls: Hit the checkbox to toggle on/off, then use 5-0 to move on each
 
 The cheat table's hotkeys, e. g. teleport-to-quest-arrow's「`」, will perform their functions even when pirate101 is not tabbed, so long as the cheat table is attached to pirate101.
 
-Mission-specific teleports are activated by toggling their checkboxes.
+Mission-specific teleports are activated by toggling their checkboxes twice.
