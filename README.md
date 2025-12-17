@@ -9,4 +9,6 @@ Credit given to u/SmexnerMan for fixing the player coordinate values with each u
 
 Noclip Controls: Hit the checkbox to toggle on/off, then use 5-0 to move on each axis(5/6 for X, 7/8 for Y, 9/0 for Z)
 
-The "teleport to quest arrow location" function activates whenever [ ` ] is hit, even when pirate101 is not tabbed.
+The cheat table's hotkeys, e. g. teleport-to-quest-arrow's [ ` ], will activate even when pirate101 is not tabbed.
+
+Mission-specific teleports are activated by toggling their checkboxes.
